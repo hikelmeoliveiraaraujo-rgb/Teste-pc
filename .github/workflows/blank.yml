@@ -1,0 +1,26 @@
+name: Windows RDP
+on: workflow_dispatch
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 360
+    steps:
+      - name: Ativar RDP
+        env:
+          RDP_PASSWORD: ${{ secrets.RDP_PASSWORD }}
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name fDenyTSConnections -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-LocalUser -Name runneradmin -Password (ConvertTo-SecureString $env:RDP_PASSWORD -AsPlainText -Force)
+
+      - name: Conectar Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          hostname: pc-virtual
+
+      - name: Manter ligado
+        run: |
+          tailscale ip -4
+          Start-Sleep -Seconds 21000
